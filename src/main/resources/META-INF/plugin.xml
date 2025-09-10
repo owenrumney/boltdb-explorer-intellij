@@ -1,0 +1,44 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>co.uk.owenrumney.boltdb-explorer-intellij</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>BoltDB Explorer</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor url="https://github.com/owenrumney">Owen Rumney</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    BoltDB Explorer for IntelliJ IDEA - Browse and manage BoltDB database files directly within your IDE.<br>
+    <em>Features include browsing buckets, viewing key-value pairs, searching, and editing database contents.</em>
+  ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <fileType name="BoltDB"
+                  implementationClass="co.uk.owenrumney.boltdb.explorer.BoltDBFileType"
+                  fieldName="INSTANCE"
+                  language="BoltDB"
+                  extensions="db;bolt;boltdb"/>
+        <fileEditorProvider implementation="co.uk.owenrumney.boltdb.explorer.BoltDBFileEditorProvider"/>
+    </extensions>
+
+    <actions>
+        <action id="OpenInBoltDBExplorer"
+                class="co.uk.owenrumney.boltdb.explorer.OpenInBoltDBExplorerAction"
+                text="Open in BoltDB Explorer"
+                description="Open this database file in the BoltDB Explorer">
+            <add-to-group group-id="ProjectViewPopupMenu" anchor="after" relative-to-action="$Copy"/>
+            <add-to-group group-id="EditorPopupMenu" anchor="after" relative-to-action="$Copy"/>
+        </action>
+    </actions>
+</idea-plugin>
