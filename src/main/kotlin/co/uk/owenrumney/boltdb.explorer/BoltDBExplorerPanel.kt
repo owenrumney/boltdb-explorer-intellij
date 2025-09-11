@@ -109,6 +109,10 @@ class BoltDBExplorerPanel(private val project: Project) : JPanel(BorderLayout())
         // Load keys and select the item after loading completes
         loadKeys(path, afterKey = null, append = false) {
             selectItemInTable(itemName)
+            // If no item was found/selected, show current path details as fallback
+            if (keysTable.selectedRow < 0) {
+                showCurrentPathDetails()
+            }
         }
     }
 
@@ -573,7 +577,10 @@ class BoltDBExplorerPanel(private val project: Project) : JPanel(BorderLayout())
 
     private fun selectDatabase(dbPath: String) {
         boltHelper.setDatabasePath(dbPath)
-        loadKeys("")
+        loadKeys("") {
+            // After loading keys, show details for the root level
+            showCurrentPathDetails()
+        }
     }
 
     private fun loadKeys(bucketPath: String, afterKey: String? = null, append: Boolean = false, onComplete: (() -> Unit)? = null) {
@@ -728,6 +735,92 @@ class BoltDBExplorerPanel(private val project: Project) : JPanel(BorderLayout())
         }
     }
 
+    private fun showCurrentPathDetails() {
+        executorService.submit {
+            try {
+                // Load current bucket/path contents to show statistics
+                val result = boltHelper.listKeys(currentPath, limit = 10000) // Higher limit for accurate stats
+                
+                SwingUtilities.invokeLater {
+                    updateCurrentPathPreviewPanel(result)
+                }
+            } catch (e: Exception) {
+                SwingUtilities.invokeLater {
+                    showError("Failed to load path details: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun updateCurrentPathPreviewPanel(result: KeysResult) {
+        previewPanel.removeAll()
+        previewPanel.background = UIUtil.getPanelBackground()
+
+        // Modern header with styling
+        val headerPanel = JPanel(BorderLayout())
+        headerPanel.background = UIUtil.getPanelBackground()
+        headerPanel.border = JBUI.Borders.empty(0, 0, 12, 0)
+        
+        val currentBucketName = if (currentPath.isEmpty()) "Root" else currentPath.split("/").last()
+        val titleLabel = JBLabel("Current: $currentBucketName")
+        titleLabel.font = titleLabel.font.deriveFont(Font.BOLD, 14f)
+        titleLabel.foreground = UIUtil.getLabelForeground()
+        headerPanel.add(titleLabel, BorderLayout.WEST)
+
+        if (isWriteMode && currentPath.isNotEmpty()) {
+            val actionsPanel = JPanel(FlowLayout(FlowLayout.RIGHT, 4, 0))  // Smaller gap
+            actionsPanel.background = UIUtil.getPanelBackground()
+            
+            val deleteButton = createModernButton("🗑 Delete", isCompact = true)
+            deleteButton.addActionListener { confirmDelete(currentBucketName, true) }
+
+            actionsPanel.add(deleteButton)
+            headerPanel.add(actionsPanel, BorderLayout.EAST)
+        }
+
+        previewPanel.add(headerPanel, BorderLayout.NORTH)
+
+        // Create path statistics
+        val pathStats = mutableMapOf<String, Any>()
+        val buckets = result.safeItems.filter { it.isBucket }
+        val keys = result.safeItems.filter { !it.isBucket }
+        
+        pathStats["path"] = if (currentPath.isEmpty()) "/" else "/$currentPath"
+        
+        // Show accurate counts or indicate when limited
+        val totalItems = result.safeItems.size
+        pathStats["totalItems"] = if (result.nextAfterKey != null) {
+            "$totalItems+" // Indicate there are more items
+        } else {
+            totalItems
+        }
+        
+        pathStats["buckets"] = buckets.size
+        pathStats["keys"] = keys.size
+        pathStats["approximateReturned"] = result.approxReturned
+        
+        // Add a note if results are limited
+        if (result.nextAfterKey != null) {
+            pathStats["note"] = "Showing first $totalItems items"
+        }
+        
+        // Format as JSON for display
+        val jsonContent = formatJson(pathStats)
+        
+        val contentArea = JBTextArea(jsonContent)
+        contentArea.isEditable = false
+        contentArea.background = UIUtil.getPanelBackground()
+        contentArea.foreground = UIUtil.getLabelForeground()
+        contentArea.font = Font(Font.MONOSPACED, Font.PLAIN, 12)
+        contentArea.border = JBUI.Borders.empty(8)
+
+        val scrollPane = JBScrollPane(contentArea)
+        previewPanel.add(scrollPane, BorderLayout.CENTER)
+
+        previewPanel.revalidate()
+        previewPanel.repaint()
+    }
+
     private fun updateBucketPreviewPanel(bucketName: String, result: KeysResult) {
         previewPanel.removeAll()
         previewPanel.background = UIUtil.getPanelBackground()
@@ -864,7 +957,10 @@ class BoltDBExplorerPanel(private val project: Project) : JPanel(BorderLayout())
         selectedKey = null // Clear selection when navigating
         clearPreviewPanel()
         refreshHeaderPanel()
-        loadKeys(path)
+        loadKeys(path) {
+            // After loading keys, show details for the current bucket/path
+            showCurrentPathDetails()
+        }
     }
 
     private fun clearPreviewPanel() {
@@ -903,6 +999,17 @@ class BoltDBExplorerPanel(private val project: Project) : JPanel(BorderLayout())
                 showBucketDetails(keyName)
             } else {
                 loadKeyPreview(keyName)
+            }
+        } ?: run {
+            // If no specific key is selected, but we're showing current path details,
+            // refresh the current path details to show/hide the delete button
+            if (previewPanel.componentCount > 0) {
+                // Check if we're currently showing path details (not the empty state)
+                val firstComponent = previewPanel.getComponent(0)
+                if (firstComponent is JPanel) {
+                    // We're showing some details, refresh the current path details
+                    showCurrentPathDetails()
+                }
             }
         }
         

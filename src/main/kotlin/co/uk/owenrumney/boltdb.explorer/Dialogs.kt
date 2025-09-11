@@ -19,11 +19,8 @@ class SearchResultsDialog(
     private val searchResult: SearchResult
 ) : JDialog(SwingUtilities.getWindowAncestor(parent) as? Window, "Search Results", ModalityType.APPLICATION_MODAL) {
 
-    private val resultsTableModel = DefaultTableModel(arrayOf("Name", "Type", "Path"), 0)
-    private val resultsTable = object : JBTable(resultsTableModel) {
-        // Disable cell editing completely
-        override fun isCellEditable(row: Int, column: Int): Boolean = false
-    }
+    private val resultsTableModel = DefaultTableModel(arrayOf("Name", "Path", "Type"), 0)
+    private val resultsTable = JBTable(resultsTableModel)
 
     init {
         setupUI()
@@ -64,12 +61,26 @@ class SearchResultsDialog(
             }
         })
 
+        // Set column widths - Path is the most important column
+        resultsTable.columnModel.getColumn(0).preferredWidth = 150 // Name
+        resultsTable.columnModel.getColumn(1).preferredWidth = 300 // Path (most important)
+        resultsTable.columnModel.getColumn(2).preferredWidth = 80  // Type
+
         val scrollPane = JBScrollPane(resultsTable)
         add(scrollPane, BorderLayout.CENTER)
 
         // Buttons
         val buttonPanel = JPanel(FlowLayout(FlowLayout.RIGHT))
         buttonPanel.border = JBUI.Borders.empty(8)
+
+        val navigateButton = JButton("Navigate to Selected")
+        navigateButton.addActionListener {
+            val row = resultsTable.selectedRow
+            if (row >= 0) {
+                navigateToResult(row)
+            }
+        }
+        buttonPanel.add(navigateButton)
 
         val closeButton = JButton("Close")
         closeButton.addActionListener { dispose() }
@@ -92,8 +103,8 @@ class SearchResultsDialog(
 
             resultsTableModel.addRow(arrayOf(
                 decodedName,
-                typeLabel,
-                item.path.joinToString("/")
+                item.path.joinToString("/"),
+                typeLabel
             ))
         }
     }
@@ -101,19 +112,17 @@ class SearchResultsDialog(
     private fun navigateToResult(row: Int) {
         val item = searchResult.safeItems[row]
         val bucketPath = item.path.joinToString("/")
-        
-        // Decode the item name for selection
-        val decodedItemName = try {
+        val decodedName = try {
             java.util.Base64.getDecoder().decode(item.keyBase64).toString(Charsets.UTF_8)
         } catch (e: Exception) {
-            item.keyBase64
+            "[invalid base64]"
         }
 
-        // Close dialog first
+        // Close dialog and navigate in parent
         dispose()
 
-        // Navigate to the bucket containing the item and select it
-        parent.navigateToAndSelect(bucketPath, decodedItemName)
+        // Navigate to the specific result in the parent panel
+        parent.navigateToAndSelect(bucketPath, decodedName)
     }
 }
 
@@ -201,8 +210,8 @@ class AddKeyDialog(private val parent: BoltDBExplorerPanel) : JDialog(SwingUtili
             return
         }
 
-        // Call parent method to add the key
-        parent.addKey(keyName, value)
+        // TODO: Call parent method to add the key
+        // This would require exposing an addKey method in BoltDBExplorerPanel
 
         dispose()
     }
@@ -269,8 +278,8 @@ class EditValueDialog(
     private fun saveValue() {
         val newValue = valueArea.text
 
-        // Call parent method to save the value
-        parent.saveKeyValue(keyName, newValue)
+        // TODO: Call parent method to save the value
+        // This would require exposing a saveValue method in BoltDBExplorerPanel
 
         dispose()
     }

@@ -1,9 +1,8 @@
 package co.uk.owenrumney.boltdb.explorer
 
 import com.intellij.openapi.fileTypes.FileType
+import com.intellij.openapi.util.IconLoader
 import com.intellij.openapi.vfs.VirtualFile
-import com.intellij.icons.AllIcons
-import com.jetbrains.rd.util.threading.coroutines.RdCoroutineScope.Companion.override
 import javax.swing.Icon
 
 /**
@@ -22,7 +21,7 @@ class BoltDBFileType : FileType {
 
     override fun getDefaultExtension(): String = DEFAULT_EXTENSION
 
-    override fun getIcon(): Icon? = AllIcons.Toolwindows.ToolWindowDataView
+    override fun getIcon(): Icon? = IconLoader.getIcon("/icons/boltdb.png", BoltDBFileType::class.java)
 
     override fun isBinary(): Boolean = true
 
