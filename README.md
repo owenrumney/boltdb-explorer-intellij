@@ -1,7 +1,7 @@
 # BoltDB Explorer for IntelliJ IDEA
 
-[![JetBrains Plugin](https://img.shields.io/jetbrains/plugin/v/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
-[![JetBrains Plugin Downloads](https://img.shields.io/jetbrains/plugin/d/PLUGIN_ID.svg)](https://plugins.jetbrains.com/plugin/PLUGIN_ID)
+[![JetBrains Plugin](https://img.shields.io/jetbrains/plugin/v/28440-boltdb-explorer.svg)](https://plugins.jetbrains.com/plugin/28440-boltdb-explorer)
+[![JetBrains Plugin Downloads](https://img.shields.io/jetbrains/plugin/d/28440-boltdb-explorer.svg)](https://plugins.jetbrains.com/plugin/P28440-boltdb-explorer)
 
 A powerful IntelliJ IDEA plugin for browsing and managing BoltDB database files directly within your IDE.
 
